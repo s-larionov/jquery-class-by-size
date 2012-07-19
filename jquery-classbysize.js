@@ -8,15 +8,25 @@
 // @modified: 2012-07-19
 /*******************************************************************************************/
 
+/**
+ * @param {jQuery|DOMElement} element
+ * @param {Array|Object} config
+ * @constructor
+ */
 $.ClassBySize = function(element, config) {
 	var self = this;
 
-	this.config = config instanceof Array? config: [];
-	for (var i = 0, len = this.config.length; i < len; i++) {
-		this.config[i].applyTo = this.config[i].applyTo? $(this.config[i].applyTo): this.element;
+	this.element = $(element);
+	this.config = config && config.rules instanceof Array? config: (config instanceof Array? {rules: config}: {rules: []});
+
+	if (!this.element.size() || !this.config.rules.length) {
+		return;
 	}
 
-	this.element = $(element);
+	this.applyTo = this.config.applyTo? $(this.config.applyTo): this.element;
+	for (var i = 0, len = this.config.rules.length; i < len; i++) {
+		this.config[i].applyTo = this.config[i].applyTo? $(this.config[i].applyTo): this.applyTo;
+	}
 
 	$(window).resize(function() {
 		self.resize.call(self);
@@ -28,14 +38,20 @@ $.ClassBySize.prototype.resize = function() {
 	var w = $.browser.opera && this.element.prop('innerWidth')? this.element.prop('innerWidth'): this.element.width(),
 		h = $.browser.opera && this.element.prop('innerHeight')? this.element.prop('innerHeight'): this.element.height();
 
-	for (var i = 0, len = this.config.length; i < len; i++) {
-		var minW = this.config[i].minWidth || w,
-			maxW = this.config[i].maxWidth || (w + 1),
-			minH = this.config[i].minHeight || h,
-			maxH = this.config[i].maxHeight || (h + 1),
+	for (var i = 0, len = this.config.rules.length; i < len; i++) {
+		var rule = this.config.rules[i];
+
+		if (!rule.className) {
+			continue;
+		}
+
+		var minW = rule.minWidth || w,
+			maxW = rule.maxWidth || (w + 1),
+			minH = rule.minHeight || h,
+			maxH = rule.maxHeight || (h + 1),
 			action = (w >= minW && w < maxW && h >= minH && h < maxH)? 'addClass': 'removeClass';
 
-		this.config[i].applyTo[action](this.config[i].className);
+		rule.applyTo[action](rule.className);
 	}
 };
 $.fn.ClassBySize = function(config) {
